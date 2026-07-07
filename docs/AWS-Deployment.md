@@ -731,3 +731,179 @@ Copy the `id` from the response and use it to register your user.
 - Restrict EC2 security group port 22 to your IP only
 - Add HTTPS using Let's Encrypt certbot once you have a domain
 - Never commit `.env` files to git
+
+
+
+
+## Testing the Complete Order Workflow
+
+Follow the steps below whenever you create a **new product** in the application.
+
+### Step 1: Create a Product (Distributor)
+
+1. Login as the Distributor.
+
+   **Email:** `distributor@mederr.com`  
+   **Password:** `Dist@1234`
+
+2. Navigate to:
+
+   ```
+   Products → Add Product
+   ```
+
+3. Fill in the required details:
+
+   - SKU
+   - Name
+   - Manufacturer
+   - Category
+   - Unit
+   - MRP
+   - Wholesale Price
+
+4. Click **Save**.
+
+---
+
+## Step 2: Get the Product ID
+
+Run the following command to list all products:
+
+```bash
+curl -s http://localhost:8082/api/v1/products \
+  -H "Authorization: Bearer $TOKEN" | python3 -m json.tool
+```
+
+Example output:
+
+```json
+{
+  "id": "6a4cb6f54e8b0f584a4d0af9",
+  "name": "crocin"
+}
+```
+
+Copy the **id** of the product you just created.
+
+---
+
+## Step 3: Add Inventory
+
+Set the Product ID:
+
+```bash
+NEW_PRODUCT_ID=<YOUR_PRODUCT_ID>
+```
+
+Example:
+
+```bash
+NEW_PRODUCT_ID=6a4cb6f54e8b0f584a4d0af9
+```
+
+Now add inventory for the product:
+
+```bash
+curl -X POST http://localhost:8082/api/v1/products/inventory \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d "{
+    \"productId\": \"$NEW_PRODUCT_ID\",
+    \"warehouseId\": \"WH-01\",
+    \"warehouseLocation\": \"Main Warehouse\",
+    \"batchNumber\": \"BATCH-003\",
+    \"manufacturingDate\": \"2026-01-01\",
+    \"expiryDate\": \"2028-01-01\",
+    \"quantity\": 1000,
+    \"reorderLevel\": 10,
+    \"distributorId\": \"$DIST_ORG_ID\"
+  }"
+```
+
+If successful, you should receive a response similar to:
+
+```json
+{
+  "productName": "crocin",
+  "quantityAvailable": 1000,
+  "status": "IN_STOCK"
+}
+```
+
+---
+
+## Step 4: Create an Order (Hospital)
+
+1. Logout from the Distributor account.
+
+2. Login as the Hospital.
+
+   **Email:** `hospital@mederr.com`  
+   **Password:** `Hosp@1234`
+
+3. Navigate to:
+
+   ```
+   Orders → New Order
+   ```
+
+4. Select:
+
+   - Distributor
+   - Newly created product
+   - Quantity
+   - Shipping Address
+
+5. Click **Place Order**.
+
+The order status will be **PENDING**.
+
+---
+
+## Step 5: Approve the Order (Distributor)
+
+1. Logout from the Hospital account.
+
+2. Login again as the Distributor.
+
+   **Email:** `distributor@mederr.com`  
+   **Password:** `Dist@1234`
+
+3. Navigate to:
+
+   ```
+   Dashboard → Pending Approvals
+   ```
+
+4. Select the pending order.
+
+5. Click **Approve**.
+
+The order status should change from:
+
+```
+PENDING
+```
+
+to
+
+```
+APPROVED
+```
+
+---
+
+## Notes
+
+- Creating a product **does not automatically create inventory**.
+- Every newly created product **must have inventory added** before it can be ordered and approved.
+- If inventory is not added, the distributor will receive an error similar to:
+
+```json
+{
+  "detail": "Insufficient stock for product: <product-name>"
+}
+```
+
+- Repeat **Step 2** and **Step 3** for every new product created through the UI.
