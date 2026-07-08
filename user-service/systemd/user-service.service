@@ -1,0 +1,14 @@
+[Unit]
+Description=User Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/medical_erp/user-service
+EnvironmentFile=/root/medical_erp/user-service/.env
+ExecStart=/usr/bin/java -jar target/user-service-1.0.0.jar
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
