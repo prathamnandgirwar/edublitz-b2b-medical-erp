@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/root/medical_erp/order-service
-EnvironmentFile=/root/medical_erp/order-service/.env
+WorkingDirectory=/root/edublitz-b2b-medical-erp/order-service
+EnvironmentFile=/root/edublitz-b2b-medical-erp/order-service/.env
 ExecStart=/usr/bin/java -jar target/order-service-1.0.0.jar
 Restart=on-failure
 
